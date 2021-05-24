@@ -16,6 +16,8 @@ z__logger <- NULL
 # both the console and a log file.
 #
 log_start <- function() {
+  if (!dir.exists("logs"))
+    dir.create("logs")
   filename <- format(Sys.time(), "logs/%Y%m%d_%H%M%S.txt")
   console_appender <- console_appender(layout = default_log_layout())
   file_appender <- file_appender(filename, append = TRUE,
@@ -49,19 +51,19 @@ beans <- beans %>% mutate(Class = factor(Class))
 colnames(beans) <- c("A", "P", "L", "l", "K", "Ec", "C", "Ed", "Ex", "S", "R",
                      "CO", "SF1", "SF2", "SF3", "SF4", "Class")
 bean_types <- unique(beans$Class)
-bean_proportions <- beans %>% 
+bean_proportions <- beans %>%
   group_by(Class) %>%
   summarize(p = n() / nrow(beans))
 
 features <- setdiff(colnames(beans), "Class")
 
 suppressWarnings(set.seed(16, sample.kind = "Rounding"))
-test_index <- createDataPartition(beans$Class, times = 1, p = 0.1, 
+test_index <- createDataPartition(beans$Class, times = 1, p = 0.1,
                                   list = FALSE)
 training <- beans[-test_index, ]
-test <- beans[test_index, ] 
+test <- beans[test_index, ]
 # Verify all classes are in both sets
-stopifnot(unique(test$Class) == bean_types, 
+stopifnot(unique(test$Class) == bean_types,
           unique(training$Class) == bean_types)
 
 remove(beanUrl, test_index, beans)
