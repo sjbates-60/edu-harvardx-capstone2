@@ -1,0 +1,147 @@
+---
+title: "Comparing Models on a Dry Bean Dataset"
+subtitle: "Report for HarvardX PH125.9x: Data Science: Capstone"
+author: "Samuel Bates"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: pdf_document
+editor_options: 
+  markdown: 
+    wrap: 80
+bibliography: references.bib
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+require(tidyverse)
+require(readxl)
+require(gridExtra)
+require(RColorBrewer)
+
+beans <- read_excel("DryBeanDataset/Dry_Bean_Dataset.xlsx")
+beans <- beans %>% mutate(Class = factor(str_to_title(Class)))
+fig1caption <- "Distributions of the features."
+```
+
+# Introduction
+
+For this report, I chose a dataset of measurements performed on seven types of
+dry beans[@koklu2020].
+
+What can I say about the data?
+
+Examined the set of features to discern if any are redundant.
+
+Trained several models on the dataset to see which could most accurately predict
+the type of bean from the features.
+
+# Data Exploration
+
+The dataset contains 13,611 observations. Each observation was constructed from
+a high-resolution photograph of a dry bean, and has 17 features. Twelve of the
+features are geometric, four are unknown "shape factors" $SF1 - SF4$, and one
+($Class$) indicates the type of bean. The twelve geometric factors are:
+
+1.  Area (denoted by $A$): The number of pixels in the bean image.
+
+2.  Perimeter ($P$): The length of the bean boundary measured in pixels.
+
+3.  Major axis length ($X$[^1]): The length of the longest line that can be
+    drawn within the bean boundary.
+
+4.  Minor axis length ($x$): The length of the longest line perpendicular to the
+    major axis that can be drawn within the bean boundary.
+
+5.  Aspect ratio ($K$): Defined as $X / x$.
+
+6.  Eccentricity ($Ec$): The eccentricity of an ellipse that has the same
+    moments of inertia as the bean image.
+
+7.  Convex area ($C$): The number of pixels within the smallest convext polygon
+    that contains the bean image.
+
+8.  Equivalent diameter ($Ed$): The diameter of a circle having the same area as
+    the bean image.
+
+9.  Extent ($Ex$): The ratio of the pixels in the bounding box to the bean area.
+
+10. Solidity ($S$): Also known as convexity. The ratio of the pixels in the
+    convex shell to the pixels in the bean image.
+
+11. Roundness ($R$): Defined as $4 \pi A / P^2$.
+
+12. Compactness ($CO$): Defined as $Ed / X$.
+
+[^1]: The document accompanying the dataset uses $L$ and $l$ for the major and
+    minor aix lengths. I changed it to X's since a lower-case L is not always
+    distinguishable from an upper-case I.
+
+There are seven types of bean represented: Barbunya, Bombay, Cali, Dermason,
+Horoz, Seker, and Sira. Figure 1 shows the distribution of the features for each
+type of bean.
+
+```{r feature-distributions, echo=FALSE, fig.height=7, fig.cap=`fig1caption`}
+boxplot <- geom_boxplot(lwd = 0.2, outlier.size = .3)
+no_x <- theme(axis.text.x = element_blank(),
+              axis.title.x = element_blank(),
+              axis.ticks.x = element_blank())
+no_legend <- theme(legend.position = "none")
+colrs <- scale_fill_manual(values = brewer.pal(7, "Set1"))
+y_text <- theme(axis.text.y = element_text(size = 8),
+                axis.title.y = element_text(family = "Times", size = 9))
+
+p01 <- beans %>% ggplot(aes(Class, Area, fill = Class)) +
+  boxplot + ylab("Area (A)") + labs(fill = "Type of bean") +
+  no_x + y_text + colrs
+p02 <- beans %>% ggplot(aes(Class, Perimeter, fill = Class)) + 
+  boxplot + ylab("Perimeter (P)") +  no_x + no_legend + y_text + colrs
+p03 <-beans %>% ggplot(aes(Class, MajorAxisLength, fill = Class )) + 
+  boxplot + ylab("Major axis length (X)") +  no_x + no_legend + y_text + colrs
+p04 <- beans %>% ggplot(aes(Class, MinorAxisLength, fill = Class)) + 
+  boxplot + ylab("Minor axis length (x)") +  no_x + no_legend + y_text + colrs
+p05 <- beans %>% ggplot(aes(Class, AspectRation, fill = Class)) +
+  boxplot + ylab("Aspect Ratio (K)") +  no_x + no_legend + y_text + colrs
+p06 <- beans %>% ggplot(aes(Class, Eccentricity, fill = Class)) +
+  boxplot + ylab("Eccentricity (Ec)") +  no_x + no_legend + y_text + colrs
+p07 <- beans %>% ggplot(aes(Class, ConvexArea, fill = Class)) +
+  boxplot + ylab("Convex area (C)") +  no_x + no_legend + y_text + colrs
+p08 <- beans %>% ggplot(aes(Class, EquivDiameter, fill = Class)) +
+  boxplot + ylab("Equiv. diameter (Ed)") +  no_x + no_legend + y_text + colrs
+p09 <- beans %>% ggplot(aes(Class, Extent, fill = Class)) +
+  boxplot + ylab("Extent (Ex)") +  no_x + no_legend + y_text + colrs
+p10 <- beans %>% ggplot(aes(Class, Solidity, fill = Class)) +
+  boxplot + ylab("Solidity (S)") +  no_x + no_legend + y_text + colrs
+p11 <- beans %>% ggplot(aes(Class, roundness, fill = Class)) +
+  boxplot + ylab("Roundness (R)") +  no_x + no_legend + y_text + colrs
+p12 <- beans %>% ggplot(aes(Class, Compactness, fill = Class)) +
+  boxplot + ylab("Compactness (CO)") +  no_x + no_legend + y_text + colrs
+p13 <- beans %>% ggplot(aes(Class, ShapeFactor1, fill = Class)) +
+  boxplot + ylab("Shape factor 1 (SF1)") +  no_x + no_legend + y_text + colrs
+p14 <- beans %>% ggplot(aes(Class, ShapeFactor2, fill = Class)) +
+  boxplot + ylab("Shape factor 2 (SF2)") +  no_x + no_legend + y_text + colrs
+p15 <- beans %>% ggplot(aes(Class, ShapeFactor3, fill = Class)) +
+  boxplot + ylab("Shape factor 3 (SF3)") +  no_x + no_legend + y_text + colrs
+p16 <- beans %>% ggplot(aes(Class, ShapeFactor4, fill = Class)) +
+  boxplot + ylab("Shape factor 4 (SF4)") +  no_x + no_legend + y_text + colrs
+
+y01r <- layer_scales(p01)$y$get_limits() %>% unlist() %>% range()
+y03r <- layer_scales(p03)$y$get_limits() %>% unlist() %>% range()
+
+suppressWarnings(areas <- 
+                   arrangeGrob(p01, p07 + ylim(y01r), 
+                               top = "Features measuring an area",
+                               ncol = 2, widths = c(.575, .425)))
+suppressWarnings(distances <- 
+                   arrangeGrob(p02, p03, p04 + ylim(y03r), 
+                               p08 + ylim(y03r), 
+                               top = "Features measuring a distance",
+                               ncol = 4))
+suppressWarnings(ratios <- 
+                   arrangeGrob(p05, p06, p09, p10, p11, p12, p13, p14, p15, p16,
+                               top = "Remaining features",
+                               ncol = 5, nrow = 2))
+grid.arrange(areas, distances, ratios, nrow = 3, heights = c(.435, .217, .348))
+```
+
+## Reducing dimensions
+
+x
