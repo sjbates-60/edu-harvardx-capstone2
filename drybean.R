@@ -47,24 +47,43 @@ log_info <- function(msg) {
 # file.remove("bean.zip")
 
 beans <- read_excel("DryBeanDataset/Dry_Bean_Dataset.xlsx")
-beans <- beans %>% mutate(Class = factor(Class))
-colnames(beans) <- c("A", "P", "L", "l", "K", "Ec", "C", "Ed", "Ex", "S", "R",
+beans <- beans %>% mutate(Class = factor(str_to_title(Class)))
+colnames(beans) <- c("A", "P", "X", "x", "K", "Ec", "C", "Ed", "Ex", "S", "R",
                      "CO", "SF1", "SF2", "SF3", "SF4", "Class")
 bean_types <- unique(beans$Class)
 bean_proportions <- beans %>%
   group_by(Class) %>%
-  summarize(p = n() / nrow(beans))
+  summarize(n = n(), p = n() / nrow(beans))
 
 features <- setdiff(colnames(beans), "Class")
 
-suppressWarnings(set.seed(16, sample.kind = "Rounding"))
-test_index <- createDataPartition(beans$Class, times = 1, p = 0.1,
-                                  list = FALSE)
-training <- beans[-test_index, ]
-test <- beans[test_index, ]
-# Verify all classes are in both sets
-stopifnot(unique(test$Class) == bean_types,
-          unique(training$Class) == bean_types)
+## 2. Verify mathematical relationships among features------------------------
+#  Do this by showing the absolute value of the maximum difference is very
+#  close to zero.
+#
+near_zero <- 10^-10
+stopifnot("Aspect ratio: K is not equal to X/x" =
+            max(abs(beans$K - beans$X / beans$x)) < near_zero)
 
-remove(beanUrl, test_index, beans)
+stopifnot("Equivalent diameter: A is not equal to pi*Ed^2/4" =
+            max(abs(beans$A - pi * beans$Ed^2 / 4)) < near_zero)
 
+stopifnot("Solidity: S is not equal to A/C" =
+            max(abs(beans$S - beans$A / beans$C)) < near_zero)
+
+stopifnot("Roundness: R is not equal to 4*pi*A/P^2" =
+            max(abs(beans$R - 4 * pi * beans$A / beans$P^2)) < near_zero)
+
+stopifnot("Compactness: CO is not equal to Ed/X" =
+            max(abs(beans$CO - beans$Ed / beans$X)) < near_zero)
+
+# suppressWarnings(set.seed(16, sample.kind = "Rounding"))
+# test_index <- createDataPartition(beans$Class, times = 1, p = 0.1,
+#                                   list = FALSE)
+# training <- beans[-test_index, ]
+# test <- beans[test_index, ]
+# # Verify all classes are in both sets
+# stopifnot(unique(test$Class) == bean_types,
+#           unique(training$Class) == bean_types)
+#
+# remove(beanUrl, test_index, beans)
