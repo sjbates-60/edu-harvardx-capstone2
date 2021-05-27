@@ -19,6 +19,8 @@ require(RColorBrewer)
 
 beans <- read_excel("DryBeanDataset/Dry_Bean_Dataset.xlsx")
 beans <- beans %>% mutate(Class = factor(str_to_title(Class)))
+colnames(beans) <- c("A", "P", "X", "x", "K", "Ec", "C", "Ed", "Ex", "S", "R",
+                     "CO", "SF1", "SF2", "SF3", "SF4", "Class")
 fig1caption <- "Distributions of the features."
 ```
 
@@ -89,38 +91,38 @@ colrs <- scale_fill_manual(values = brewer.pal(7, "Set1"))
 y_text <- theme(axis.text.y = element_text(size = 8),
                 axis.title.y = element_text(family = "Times", size = 9))
 
-p01 <- beans %>% ggplot(aes(Class, Area, fill = Class)) +
+p01 <- beans %>% ggplot(aes(Class, A, fill = Class)) +
   boxplot + ylab("Area (A)") + labs(fill = "Type of bean") +
   no_x + y_text + colrs
-p02 <- beans %>% ggplot(aes(Class, Perimeter, fill = Class)) + 
+p02 <- beans %>% ggplot(aes(Class, P, fill = Class)) + 
   boxplot + ylab("Perimeter (P)") +  no_x + no_legend + y_text + colrs
-p03 <-beans %>% ggplot(aes(Class, MajorAxisLength, fill = Class )) + 
+p03 <-beans %>% ggplot(aes(Class, X, fill = Class )) + 
   boxplot + ylab("Major axis length (X)") +  no_x + no_legend + y_text + colrs
-p04 <- beans %>% ggplot(aes(Class, MinorAxisLength, fill = Class)) + 
+p04 <- beans %>% ggplot(aes(Class, x, fill = Class)) + 
   boxplot + ylab("Minor axis length (x)") +  no_x + no_legend + y_text + colrs
-p05 <- beans %>% ggplot(aes(Class, AspectRation, fill = Class)) +
+p05 <- beans %>% ggplot(aes(Class, K, fill = Class)) +
   boxplot + ylab("Aspect Ratio (K)") +  no_x + no_legend + y_text + colrs
-p06 <- beans %>% ggplot(aes(Class, Eccentricity, fill = Class)) +
+p06 <- beans %>% ggplot(aes(Class, Ec, fill = Class)) +
   boxplot + ylab("Eccentricity (Ec)") +  no_x + no_legend + y_text + colrs
-p07 <- beans %>% ggplot(aes(Class, ConvexArea, fill = Class)) +
+p07 <- beans %>% ggplot(aes(Class, C, fill = Class)) +
   boxplot + ylab("Convex area (C)") +  no_x + no_legend + y_text + colrs
-p08 <- beans %>% ggplot(aes(Class, EquivDiameter, fill = Class)) +
+p08 <- beans %>% ggplot(aes(Class, Ed, fill = Class)) +
   boxplot + ylab("Equiv. diameter (Ed)") +  no_x + no_legend + y_text + colrs
-p09 <- beans %>% ggplot(aes(Class, Extent, fill = Class)) +
+p09 <- beans %>% ggplot(aes(Class, Ex, fill = Class)) +
   boxplot + ylab("Extent (Ex)") +  no_x + no_legend + y_text + colrs
-p10 <- beans %>% ggplot(aes(Class, Solidity, fill = Class)) +
+p10 <- beans %>% ggplot(aes(Class, S, fill = Class)) +
   boxplot + ylab("Solidity (S)") +  no_x + no_legend + y_text + colrs
-p11 <- beans %>% ggplot(aes(Class, roundness, fill = Class)) +
+p11 <- beans %>% ggplot(aes(Class, R, fill = Class)) +
   boxplot + ylab("Roundness (R)") +  no_x + no_legend + y_text + colrs
-p12 <- beans %>% ggplot(aes(Class, Compactness, fill = Class)) +
+p12 <- beans %>% ggplot(aes(Class, CO, fill = Class)) +
   boxplot + ylab("Compactness (CO)") +  no_x + no_legend + y_text + colrs
-p13 <- beans %>% ggplot(aes(Class, ShapeFactor1, fill = Class)) +
+p13 <- beans %>% ggplot(aes(Class, SF1, fill = Class)) +
   boxplot + ylab("Shape factor 1 (SF1)") +  no_x + no_legend + y_text + colrs
-p14 <- beans %>% ggplot(aes(Class, ShapeFactor2, fill = Class)) +
+p14 <- beans %>% ggplot(aes(Class, SF2, fill = Class)) +
   boxplot + ylab("Shape factor 2 (SF2)") +  no_x + no_legend + y_text + colrs
-p15 <- beans %>% ggplot(aes(Class, ShapeFactor3, fill = Class)) +
+p15 <- beans %>% ggplot(aes(Class, SF3, fill = Class)) +
   boxplot + ylab("Shape factor 3 (SF3)") +  no_x + no_legend + y_text + colrs
-p16 <- beans %>% ggplot(aes(Class, ShapeFactor4, fill = Class)) +
+p16 <- beans %>% ggplot(aes(Class, SF4, fill = Class)) +
   boxplot + ylab("Shape factor 4 (SF4)") +  no_x + no_legend + y_text + colrs
 
 y01r <- layer_scales(p01)$y$get_limits() %>% unlist() %>% range()
@@ -144,4 +146,25 @@ grid.arrange(areas, distances, ratios, nrow = 3, heights = c(.435, .217, .348))
 
 ## Reducing dimensions
 
-x
+Five of the geometric features are defined in terms of other features. Four of
+these are explicit: aspect ratio, equivalent diameter ($Ed = \sqrt{4 A / \pi}$),
+roundness, and compactness. In addition, solidity is experimentally shown to be
+equal to $A/C$. These relationships are verified to 9 decimal places by the
+following five conditionals:
+
+```{r echo=TRUE}
+near_zero <- 10^-10
+all(
+  max(abs(beans$K - beans$X / beans$x)) < near_zero,
+  max(abs(beans$A - pi * beans$Ed^2 / 4)) < near_zero,
+  max(abs(beans$S - beans$A / beans$C)) < near_zero,
+  max(abs(beans$R - 4 * pi * beans$A / beans$P^2)) < near_zero,
+  max(abs(beans$CO - beans$Ed / beans$X)) < near_zero)
+```
+
+Consequently, an observation is completely defined by just eleven features: the
+seven remaining geometric features plus the four shape factors.
+
+However, one or more of the five derived features may still be needed by a model
+to have good predictive power. Table 1 shows the accuracy of several models
+using the eleven features:
