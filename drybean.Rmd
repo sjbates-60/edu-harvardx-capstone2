@@ -15,12 +15,15 @@ knitr::opts_chunk$set(echo = FALSE)
 require(tidyverse)
 require(readxl)
 require(gridExtra)
+require(kableExtra)
 require(RColorBrewer)
+options(digits = 5)
 
 beans <- read_excel("DryBeanDataset/Dry_Bean_Dataset.xlsx")
 beans <- beans %>% mutate(Class = factor(str_to_title(Class)))
 colnames(beans) <- c("A", "P", "X", "x", "K", "Ec", "C", "Ed", "Ex", "S", "R",
                      "CO", "SF1", "SF2", "SF3", "SF4", "Class")
+features <- setdiff(colnames(beans), "Class")
 fig1caption <- "Distributions of the features."
 ```
 
@@ -62,7 +65,8 @@ features are geometric, four are unknown "shape factors" $SF1 - SF4$, and one
     that contains the bean image.
 
 8.  Equivalent diameter ($Ed$): The diameter of a circle having the same area as
-    the bean image.
+    the bean image. Expressed mathematically, $A = \pi {(Ed/2)}^2$, so $Ed$ is
+    defined as $\sqrt{4 A / \pi}$.
 
 9.  Extent ($Ex$): The ratio of the pixels in the bounding box to the bean area.
 
@@ -93,7 +97,9 @@ y_text <- theme(axis.text.y = element_text(size = 8),
 
 p01 <- beans %>% ggplot(aes(Class, A, fill = Class)) +
   boxplot + ylab("Area (A)") + labs(fill = "Type of bean") +
-  no_x + y_text + colrs
+  no_x + y_text + colrs +
+  theme(legend.text = element_text(family = "Times"),
+        legend.title = element_text(family = "Times"))
 p02 <- beans %>% ggplot(aes(Class, P, fill = Class)) + 
   boxplot + ylab("Perimeter (P)") +  no_x + no_legend + y_text + colrs
 p03 <-beans %>% ggplot(aes(Class, X, fill = Class )) + 
@@ -147,10 +153,10 @@ grid.arrange(areas, distances, ratios, nrow = 3, heights = c(.435, .217, .348))
 ## Reducing dimensions
 
 Five of the geometric features are defined in terms of other features. Four of
-these are explicit: aspect ratio, equivalent diameter ($Ed = \sqrt{4 A / \pi}$),
-roundness, and compactness. In addition, solidity is experimentally shown to be
-equal to $A/C$. These relationships are verified to 9 decimal places by the
-following five conditionals:
+these are explicit: aspect ratio, equivalent diameter, roundness, and
+compactness. In addition, solidity $S$ is experimentally shown to be equal to
+$A/C$. These relationships are verified to 9 decimal places by the following
+code:
 
 ```{r echo=TRUE}
 near_zero <- 10^-10
@@ -162,9 +168,45 @@ all(
   max(abs(beans$CO - beans$Ed / beans$X)) < near_zero)
 ```
 
-Consequently, an observation is completely defined by just eleven features: the
-seven remaining geometric features plus the four shape factors.
+Consequently, an observation is completely defined by just 11 features: the 7
+remaining geometric features { $A$, $P$, $X$, $x$, $Ec$, $C$, $Ex$ }, plus the 4
+shape factors { $SF1$, $SF2$, $SF3$, $SF4$ }.
+
+Correlation allows us to eliminate another feature. Figure 1 shows that the area
+$A$ and convex area $C$ distributions for each type of bean are very similar.
+Table 1 shows that they are highly correlated, so $C$ can be safely removed from
+the list of features. The table also provides evidence that we may safely remove
+$CO$ and $Ed$, as $SF3$ and $P$, respectively, are highly correlated with them.
+
+```{r correlations}
+corr_table <- map_dfr(1:(length(features) - 1), function(i) {
+  map_dfr((i+1):length(features), function(j) {
+    tibble(f1 = features[i], f2 = features[j],
+           corr = cor(beans %>% select(all_of(f1)),
+                      beans %>% select(all_of(f2))))
+  })
+})
+high_corrs <- corr_table %>% arrange(desc(abs(corr))) %>% filter(abs(corr) > .99)
+knitr::kable(high_corrs, booktabs = T, digits = 5,
+             col.names = c("Feature 1", "Feature 2", "Correlation"),
+             caption = "The most highly-correlated features.") %>%
+  kable_styling(latex_options = "hold_position")
+```
 
 However, one or more of the five derived features may still be needed by a model
-to have good predictive power. Table 1 shows the accuracy of several models
+to have good predictive power. Table x shows the accuracy of several models
 using the eleven features:
+
+# Models and Analysis
+
+x
+
+# Results
+
+x
+
+# Conclusions
+
+x
+
+# Bibliography
