@@ -14,6 +14,7 @@ bibliography: references.bib
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 require(tidyverse)
 require(readxl)
+require(grid)
 require(gridExtra)
 require(kableExtra)
 require(RColorBrewer)
@@ -26,18 +27,27 @@ beans <- beans %>% mutate(Class = factor(str_to_title(Class)))
 colnames(beans) <- c("A", "P", "X", "x", "K", "Ec", "C", "Ed", "Ex", "S", "R",
                      "CO", "SF1", "SF2", "SF3", "SF4", "Class")
 features <- setdiff(colnames(beans), "Class")
-fig1caption <- "Distributions of the features."
+fig1caption <- "Distributions of the features, grouped by the type of feature."
 ```
 
 # Introduction
 
-For this report, I chose a dataset of measurements performed on seven types of
-dry beans[@koklu2020].
+For this report, I am exploring a few different ways to select a subset of
+features for training a classification model. I chose a dataset of measurements
+performed on seven types of dry beans[@koklu2020].
 
-Applied two techniques to reduce the dimensionality of the dataset.
+Applied two techniques to select features.
 
-Trained several models on four sets of features to see which could most
-accurately predict the type of bean from the features.
+Trained four models on four sets of features to see which could most accurately
+predict the type of bean from the features.
+
+Constructed a mechanism for selecting a minimal set of features that maximizes
+the accuracy of a model.
+
+One of the models reports the importance of each feature in its classification.
+I compare the sets of important features to the sets resulting from the minimal
+set construction. Finally, I calculate the accuracy of the four model on the
+four sets of features using the reserved test set.
 
 # Data Exploration
 
@@ -85,7 +95,7 @@ There are seven types of bean represented: Barbunya, Bombay, Cali, Dermason,
 Horoz, Seker, and Sira. Figure 1 shows the distribution of the features for each
 type of bean.
 
-```{r feature-ridgeplots, echo=FALSE, fig.height=7, fig.cap=`fig1caption`}
+```{r feature-ridgeplots, fig.height=7, fig.cap=`fig1caption`}
 ridges <- geom_density_ridges(lwd = .2)
 no_y <- theme(axis.text.y = element_blank(),
               axis.title.y = element_blank(),
@@ -136,13 +146,13 @@ areas <- arrangeGrob(p01, p07,
 distances <- arrangeGrob(p02, p03, p04, p08, 
                          top = "Features measuring a distance",
                          ncol = 4)
-ratios <- arrangeGrob(p05, p06, p09, p10, p11, p12, p13, p14, p15, p16,
-                      top = "Remaining features",
+others <- arrangeGrob(p05, p06, p09, p10, p11, p12, p13, p14, p15, p16,
+                      top = "Features measuring a ratio or shape factor",
                       ncol = 5, nrow = 2)
-grid.arrange(areas, distances, ratios, nrow = 3, heights = c(10, 5, 8)/23)
+grid.arrange(areas, distances, others, nrow = 3, heights = c(7, 5, 8)/20)
 ```
 
-## Reducing dimensions
+## Feature selection
 
 Five of the geometric features are defined in terms of other features. Four of
 these are explicit: aspect ratio, equivalent diameter, roundness, and
@@ -150,7 +160,7 @@ compactness. In addition, solidity $S$ is experimentally shown to be equal to
 $A/C$. These relationships are verified to 9 decimal places by the following
 code:
 
-```{r math-relations echo=TRUE, message=TRUE}
+```{r math-relations, echo=TRUE, message=TRUE}
 near_zero <- 10^-10
 all(
   max(abs(beans$K - beans$X / beans$x)) < near_zero,
@@ -187,16 +197,30 @@ knitr::kable(high_corrs, booktabs = T, digits = 5,
 
 We can also reduce the dimensionality of the data using principal components
 analysis. Applying `prcomp` to the set of features, we discover that six
-components can explain 100% of the variability.
+components can explain 100% of the variability. In fact, the first two
+components can explain the variablity to 6 decimal places; adding four more
+components reduces the standard deviation to less than 1 (Table 2).
 
 ```{r pca}
 pca <- prcomp(beans %>% select(-Class))
-knitr::kable(summary(pca)$importance[, 1:6], booktabs = T)
+options(scipen = 5)
+knitr::kable(summary(pca)$importance[, 1:6], booktabs = T,
+             caption = "The first six components of principal component analysis.")
 ```
 
 # Models and Analysis
 
-x
+Four models: linear discriminant analysis, quadratic discriminant analysis, k
+nearest neighbors, and bottstrap aggregated trees.
+
+Three sets of features: $F$, $F_{math}$, and
+$\{ PC1, PC2, PC3, PC4, PC5, PC6 \}$. The last one comes from feature extraction
+rather than feature selection, but is included for comparison purposes.
+
+The high accuracy of the PCA set suggests that a good model can be constructed
+with fewer than 10 features (the number of mathematically independent features).
+I created a way to select a set of features where each additional feature
+increases the accuracy of the model as much as possible.
 
 # Results
 
