@@ -100,9 +100,9 @@ features are geometric, four are unknown "shape factors" $SF1 - SF4$, and one
     distinguishable from an upper-case I.
 
 There are seven types of bean represented: Barbunya, Bombay, Cali, Dermason,
-Horoz, Seker, and Sira. Figure \@ref(fig:feature-ridgeplots ) shows the
+Horoz, Seker, and Sira. Figure \@ref(fig:feature-ridgeplots) shows the
 distribution of the features for each type of bean. I will use $F_{all}$ to
-denote the full set of 16 features
+denote the full set of 16 features.
 
 ```{r feature-ridgeplots, fig.height=7, fig.cap=`fig1caption`}
 ridges <- geom_density_ridges(lwd = .2)
@@ -185,7 +185,7 @@ Consequently, an observation is completely defined by just 11 features: the 7
 remaining geometric features plus the 4 shape factors.
 
 Correlation allows me to eliminate another feature. Figure
-\@ref(fig:feature-ridgeplots ) shows that the area $A$ and convex area $C$
+\@ref(fig:feature-ridgeplots) shows that the area $A$ and convex area $C$
 distributions for each type of bean are very similar. Table
 \@ref(tab:correlations) shows that they are highly correlated, so $C$ can be
 safely removed from the list of features. The table provides additionaly
@@ -322,11 +322,65 @@ accuracy_colplot(bar_data, c(rep(bar_colors[4], 2), rep(bar_colors[2], 2))) +
 One last exploration involves the idea of variable importance. When the caret
 package `train` function is executed on the last two models, `rpart2` and
 `treebag`, the result includes a table showing the importance of each variable
-or feature for predicting. I compared the lists to the feature sets produced by
-my algorithm; the result is in Tables \@ref(tab:alg-vs-imp-1) -
-\@ref(tab:alg-vs-imp-4). I also calculated the accuracy of the two models on all
-features with at least 50% importance; the results are shown in Figure
-\@ref(fig:important-features).
+or feature for predicting. I compared the tables to the feature sets produced by
+my algorithm; the results appear in Tables \@ref(tab:alg-vs-imp-1) -
+\@ref(tab:alg-vs-imp-4). Each table shows the importance of each feature as a
+percentage, with importance decreasing from left to right. The highlighted
+columns indicate the features found by the Few algorithm. I also calculated the
+accuracy of the two models on all features with at least 50% importance; the
+results are shown in Figure \@ref(fig:important-features).
+
+```{r alg-vs-imp-1}
+imp_table <- function(mod, which, table_caption) {
+  fewest <- eval(sym(sprintf("fewest_%s", which)))
+  fewest_fset <- fewest %>% filter(model == mod) %>% pull(label) %>% s2v()
+  var_imp_table <- readRDS(sprintf("%s_var_imp_%s.rds", mod, which))
+  display_table <- var_imp_table %>% arrange(desc(Overall)) %>% t()
+  rownames(display_table) <- NULL
+  match_fewest <- which(colnames(display_table) %in% fewest_fset)
+  if (length(colnames(display_table)) < 12) {
+  knitr::kable(display_table, booktabs = T,
+               caption = table_caption) %>%
+    column_spec(match_fewest, bold = TRUE, background = "yellow",
+                include_thead = TRUE)
+  } else {
+  knitr::kable(display_table, booktabs = T,
+               caption = table_caption) %>%
+    column_spec(match_fewest, bold = TRUE, background = "yellow",
+                include_thead = TRUE) %>%
+      kable_styling(latex_options = "scale_down")
+  }
+}
+rpart2_caption1 <- 
+  sprintf("%s %s",
+          "Importance of features according to the rpart2 model when",
+          "trained on $F_{all}$.")
+imp_table("rpart2", "all", rpart2_caption1)
+```
+
+```{r alg-vs-imp-2}
+rpart2_caption2 <- 
+  sprintf("%s %s",
+          "Importance of features according to the rpart2 model when",
+          "trained on $F_{min}$.")
+imp_table("rpart2", "min", rpart2_caption2)
+```
+
+```{r alg-vs-imp-3}
+treebag_caption1 <- 
+  sprintf("%s %s",
+          "Importance of features according to the treebag model when",
+          "trained on $F_{all}$.")
+imp_table("treebag", "all", treebag_caption1)
+```
+
+```{r alg-vs-imp-4}
+treebag_caption2 <- 
+  sprintf("%s %s",
+          "Importance of features according to the treebag model when",
+          "trained on $F_{all}$.")
+imp_table("treebag", "min", treebag_caption2)
+```
 
 ```{r setcaption_important}
 fig_caption_imp <- sprintf(
@@ -359,43 +413,6 @@ accuracy_colplot(bar_data, curr_colors) +
   facet_wrap(. ~ model, ncol = 1)
 ```
 
-```{r alg-vs-imp-1}
-imp_table <- function(mod, which, table_caption) {
-  fewest <- eval(sym(sprintf("fewest_%s", which)))
-  fewest_fset <- fewest %>% filter(model == mod) %>% pull(label) %>% s2v()
-  var_imp_table <- readRDS(sprintf("%s_var_imp_%s.rds", mod, which))
-  display_table <- var_imp_table %>% arrange(desc(Overall)) %>% t()
-  rownames(display_table) <- NULL
-  match_fewest <- which(colnames(display_table) %in% fewest_fset)
-  if (length(colnames(display_table)) < 12) {
-  knitr::kable(display_table, booktabs = T,
-               caption = table_caption) %>%
-    column_spec(match_fewest, bold = TRUE, background = "yellow",
-                include_thead = TRUE)
-  } else {
-  knitr::kable(display_table, booktabs = T,
-               caption = table_caption) %>%
-    column_spec(match_fewest, bold = TRUE, background = "yellow",
-                include_thead = TRUE) %>%
-      kable_styling(latex_options = "scale_down")
-  }
-}
-
-imp_table("rpart2", "all", "rpart2 on full set")
-```
-
-```{r alg-vs-imp-2}
-imp_table("rpart2", "min", "rpart2 on minimal set")
-```
-
-```{r alg-vs-imp-3}
-imp_table("treebag", "all", "treebag on full set")
-```
-
-```{r alg-vs-imp-4}
-imp_table("treebag", "min", "treebag on minimal set")
-```
-
 # Results
 
 x
@@ -407,6 +424,7 @@ fig_caption_test <- sprintf(
 )
 
 ```
+
 ```{r fig-test, fig.cap=`fig_caption_test`,fig.height=5.5}
 test_accuracies <- readRDS("test_accuracies.rds")
 accuracy_colplot(test_accuracies, c(rep(bar_colors[4], 2), 
