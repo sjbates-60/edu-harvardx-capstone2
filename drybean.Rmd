@@ -3,7 +3,9 @@ title: "Selecting Features in a Dry Bean Dataset"
 subtitle: "Report for HarvardX PH125.9x: Data Science: Capstone"
 author: "Samuel Bates"
 date: "`r format(Sys.time(), '%B %d, %Y')`"
-output: pdf_document
+output: 
+  bookdown::pdf_document2:
+    toc: FALSE
 editor_options: 
   markdown: 
     wrap: 80
@@ -98,8 +100,9 @@ features are geometric, four are unknown "shape factors" $SF1 - SF4$, and one
     distinguishable from an upper-case I.
 
 There are seven types of bean represented: Barbunya, Bombay, Cali, Dermason,
-Horoz, Seker, and Sira. Figure 1 shows the distribution of the features for each
-type of bean. I will use $F_{all}$ to denote the full set of 16 features
+Horoz, Seker, and Sira. Figure \@ref(fig:feature-ridgeplots ) shows the
+distribution of the features for each type of bean. I will use $F_{all}$ to
+denote the full set of 16 features
 
 ```{r feature-ridgeplots, fig.height=7, fig.cap=`fig1caption`}
 ridges <- geom_density_ridges(lwd = .2)
@@ -181,13 +184,14 @@ all(
 Consequently, an observation is completely defined by just 11 features: the 7
 remaining geometric features plus the 4 shape factors.
 
-Correlation allows me to eliminate another feature. Figure 1 shows that the area
-$A$ and convex area $C$ distributions for each type of bean are very similar.
-Table 1 shows that they are highly correlated, so $C$ can be safely removed from
-the list of features. The table provides additionaly evidence that I may safely
-remove $CO$ and $Ed$, as $SF3$ and $P$, respectively, are highly correlated with
-them. I will use $F_{min}$ to denote the resulting set of 10 features
-$\{ A, P, X, x, Ec, Ex, SF1, SF2, SF3, SF4 \}$.
+Correlation allows me to eliminate another feature. Figure
+\@ref(fig:feature-ridgeplots ) shows that the area $A$ and convex area $C$
+distributions for each type of bean are very similar. Table
+\@ref(tab:correlations) shows that they are highly correlated, so $C$ can be
+safely removed from the list of features. The table provides additionaly
+evidence that I may safely remove $CO$ and $Ed$, as $SF3$ and $P$, respectively,
+are highly correlated with them. I will use $F_{min}$ to denote the resulting
+set of 10 features $\{ A, P, X, x, Ec, Ex, SF1, SF2, SF3, SF4 \}$.
 
 ```{r correlations}
 corr_table <- map_dfr(1:(length(features) - 1), function(i) {
@@ -208,7 +212,7 @@ Principal component analysis suggests that $F_{min}$ may still be larger than
 necessary. I applied `prcomp` to the set of features and discovered that six
 components can explain 100% of the variability. In fact, the first two
 components can explain the variablity to 6 decimal places; adding four more
-components reduces the standard deviation to less than 1 (Table 2).
+components reduces the standard deviation to less than 1 (Table \@ref(tab:pca)).
 
 ```{r pca}
 pca <- prcomp(beans %>% select(-Class))
@@ -228,23 +232,32 @@ features:
 
 -   k nearest neighbors (`knn`);
 
--   a CART model (`rpart2`); and
+-   recursive partitioning (`rpart2`); and
 
 -   bootstrap aggregated trees (`treebag`).
 
-The result appears in Figure 2. In three of the models, the minimal set
-$F_{min}$ produced a lower accuracy than the full set $F_{all}$. The other two
-models (`knn` and `rpart2`) showed $F_{min}$ producing as high an accuracy or
-higher than that produced by $F_{all}$. This demonstrates that the goal of
-feature selection is not a vain one.
+The result appears in Figure \@ref(fig:base-accuracies). In three of the models,
+the minimal set $F_{min}$ produced a lower accuracy than the full set $F_{all}$.
+The other two models (`knn` and `rpart2`) showed $F_{min}$ producing as high an
+accuracy or higher than that produced by $F_{all}$. This demonstrates that the
+goal of feature selection is not a vain one.
 
-```{r base_accuracies, fig.cap="Accuracy of each model on both feature sets."}
+```{r base-accuracies, fig.cap="Accuracy of each model on both feature sets."}
 training_accuracies <- readRDS("training_accuracies.rds")
-training_accuracies %>% ggplot(aes(accuracy, name)) +
-  geom_col(fill = I("turquoise")) +
-  geom_text(aes(label = round(accuracy, 5)), hjust = 1.2) +
-  theme_minimal() + ylab("Feature sets") + xlab("Accuracy") +
-  theme(axis.text = element_text(family = "Times")) +
+
+accuracy_colplot <- function(dataset, colrs) {
+  dataset %>% ggplot(aes(accuracy, name, fill = name)) +
+    geom_col() +
+    geom_text(aes(label = round(accuracy, 5)), hjust = 1.2) +
+    theme_minimal() + xlab("Accuracy") + ylab("Feature sets") +
+    scale_fill_manual(values = colrs) +
+    theme(axis.text = element_text(family = "Times"),
+          axis.title = element_text(family = "Times"),
+        legend.position = "none")
+}
+
+bar_colors <- brewer.pal(6, "Blues")
+accuracy_colplot(training_accuracies, rep(bar_colors[2], 2)) +
   scale_y_discrete(labels = c(expression(italic(F[min])), 
                               expression(italic(F[all])))) + 
   facet_wrap(. ~ model, ncol = 1)
@@ -278,29 +291,27 @@ features that maximizes accuracy. The algorithm proceeds as follows:
 
 The algorithm will clearly produce different minimal sets for different models.
 Less obviously, it will produce different minimal sets for different values of
-$F'$. Figure 3 shows the results of running the algorithm on each model with
-$F = F_{all}$ or $F = F_{min}$. The accuracies for the full set and minimal set
-are shown for comparison.
+$F'$. Figure \@ref(fig:fewest-features) shows the results of running the
+algorithm on each model with $F = F_{all}$ or $F = F_{min}$. The accuracies for
+the full set and minimal set are shown for comparison.
 
-```{r setcaption3}
-fig3caption <- sprintf("%s %s %s %s", 
-                       "Accuracy of each model on the two feature sets",
-                       "and on the minimal sets produced by the algorithm.",
-                       "The feature sets discovered by the algorithm are",
-                       "shown at the base of the corresponding bar.")
+```{r setcaption-fewest}
+fig_caption_fewest <- 
+  sprintf("%s %s %s %s", 
+          "Accuracy of each model on the two feature sets",
+          "and on the minimal sets produced by the algorithm.",
+          "The feature sets discovered by the algorithm are",
+          "shown at the base of the corresponding bar.")
 ```
 
-```{r fewest_features, fig.cap=`fig3caption`, fig.height=5.5}
+```{r fewest-features, fig.cap=`fig_caption_fewest`, fig.height=5.5}
 fewest_all <- readRDS("fewest_all.rds")
 fewest_min <- readRDS("fewest_min.rds")
 bar_data <- rbind(training_accuracies %>% mutate(label = ""), 
                   fewest_all, fewest_min)
-bar_data %>% ggplot(aes(accuracy, name)) +
-  geom_col(fill = I("turquoise")) +
-  geom_text(aes(label = round(accuracy, 5)), hjust = 1.2) +
+
+accuracy_colplot(bar_data, c(rep(bar_colors[4], 2), rep(bar_colors[2], 2))) +
   geom_text(aes(x = 0.01, label = label, family = "Times"), hjust = 0) +
-  theme_minimal() + ylab("Feature sets") + xlab("Accuracy") +
-  theme(axis.text = element_text(family = "Times")) +
   scale_y_discrete(labels = c(expression(italic(Few(F[min]))), 
                               expression(italic(Few(F[all]))), 
                               expression(italic(F[min])), 
@@ -312,50 +323,104 @@ One last exploration involves the idea of variable importance. When the caret
 package `train` function is executed on the last two models, `rpart2` and
 `treebag`, the result includes a table showing the importance of each variable
 or feature for predicting. I compared the lists to the feature sets produced by
-my algorithm; the result is in Tables 3 - 6.
+my algorithm; the result is in Tables \@ref(tab:alg-vs-imp-1) -
+\@ref(tab:alg-vs-imp-4). I also calculated the accuracy of the two models on all
+features with at least 50% importance; the results are shown in Figure
+\@ref(fig:important-features).
 
-```{r alg_vs_importance}
-rpart2_fset_few_all <- fewest_all %>% filter(model == "rpart2") %>%
-  pull(label) %>% s2v()
-rpart2_var_imp_all <- readRDS("rpart2_var_imp_all.rds")
-rpart2_all_table <- rpart2_var_imp_all %>% arrange(desc(Overall)) %>% t()
-rownames(rpart2_all_table) <- NULL
-matches <- which(colnames(rpart2_all_table) %in% rpart2_fset_few_all)
-knitr::kable(rpart2_all_table, booktabs = T,
-             caption = "rpart2 on full set") %>%
-  column_spec(matches, bold = TRUE, background = "yellow", 
-              include_thead = TRUE) %>%
-  kable_styling(latex_options = "scale_down")
+```{r setcaption_important}
+fig_caption_imp <- sprintf(
+  "%s %s %s",
+  "Accuracies of different sets of features on the rpart2 and treebag",
+  "models. The bars marked *Important* show the accuracy on the set of",
+  "features that has at least 50% importance according to the respective model."
+)
+```
 
-rpart2_fset_few_min <- fewest_min %>% filter(model == "rpart2") %>%
-  pull(label) %>% s2v()
-rpart2_var_imp_min <- readRDS("rpart2_var_imp_min.rds")
-rpart2_min_table <- rpart2_var_imp_min %>% arrange(desc(Overall)) %>% t()
-rownames(rpart2_min_table) <- NULL
-matches <- which(colnames(rpart2_min_table) %in% rpart2_fset_few_min)
-knitr::kable(rpart2_min_table, booktabs = T,
-             caption = "rpart2 on minimal set") %>%
-  column_spec(matches, bold = TRUE, background = "yellow", 
-              include_thead = TRUE)
+```{r important-features, fig.cap=`fig_caption_imp`, fig.height=4}
+fewest_all <- readRDS("fewest_all.rds")
+fewest_min <- readRDS("fewest_min.rds")
+importance_accuracies <- readRDS("importance_accuracies.rds")
+bar_data <- rbind(training_accuracies %>% mutate(label = ""), 
+                  fewest_all, fewest_min, importance_accuracies) %>%
+  filter(model %in% c("rpart2", "treebag"))
+
+curr_colors <- c(rep(bar_colors[4], 2), 
+                 rep(bar_colors[3], 2), 
+                 rep(bar_colors[2], 2))
+accuracy_colplot(bar_data, curr_colors) +
+  geom_text(aes(x = 0.01, label = label, family = "Times"), hjust = 0) +
+  scale_y_discrete(labels = c(expression(italic(Few(F[min]))), 
+                              expression(italic(Few(F[all]))), 
+                              expression(italic(Important(F[all]))), 
+                              expression(italic(Important(F[min]))), 
+                              expression(italic(F[min])), 
+                              expression(italic(F[all])))) + 
+  facet_wrap(. ~ model, ncol = 1)
+```
+
+```{r alg-vs-imp-1}
+imp_table <- function(mod, which, table_caption) {
+  fewest <- eval(sym(sprintf("fewest_%s", which)))
+  fewest_fset <- fewest %>% filter(model == mod) %>% pull(label) %>% s2v()
+  var_imp_table <- readRDS(sprintf("%s_var_imp_%s.rds", mod, which))
+  display_table <- var_imp_table %>% arrange(desc(Overall)) %>% t()
+  rownames(display_table) <- NULL
+  match_fewest <- which(colnames(display_table) %in% fewest_fset)
+  if (length(colnames(display_table)) < 12) {
+  knitr::kable(display_table, booktabs = T,
+               caption = table_caption) %>%
+    column_spec(match_fewest, bold = TRUE, background = "yellow",
+                include_thead = TRUE)
+  } else {
+  knitr::kable(display_table, booktabs = T,
+               caption = table_caption) %>%
+    column_spec(match_fewest, bold = TRUE, background = "yellow",
+                include_thead = TRUE) %>%
+      kable_styling(latex_options = "scale_down")
+  }
+}
+
+imp_table("rpart2", "all", "rpart2 on full set")
+```
+
+```{r alg-vs-imp-2}
+imp_table("rpart2", "min", "rpart2 on minimal set")
+```
+
+```{r alg-vs-imp-3}
+imp_table("treebag", "all", "treebag on full set")
+```
+
+```{r alg-vs-imp-4}
+imp_table("treebag", "min", "treebag on minimal set")
 ```
 
 # Results
 
-Tables and figures yet to do:
+x
 
--   (Figure) Accuracy of `rpart2` and `treebag` models on four sets above plus
-    $Important(F_{all})$ and $Important(F_{min})$ .
+```{r setcaption_test}
+fig_caption_test <- sprintf(
+  "%s",
+  "Accuracy of each model and feature set on the testing set."
+)
 
--   (2 Tables) Overlap of $Few(F)$ and $Important(F)$ feature sets for `treebag`
-    model.
+```
+```{r fig-test, fig.cap=`fig_caption_test`,fig.height=5.5}
+test_accuracies <- readRDS("test_accuracies.rds")
+accuracy_colplot(test_accuracies, c(rep(bar_colors[4], 2), 
+                                    rep(bar_colors[2], 2))) +
+  geom_text(aes(x = 0.01, label = label, family = "Times"), hjust = 0) +
+  scale_y_discrete(labels = c(expression(italic(Few(F[min]))), 
+                              expression(italic(Few(F[all]))), 
+                              expression(italic(F[min])), 
+                              expression(italic(F[all])))) + 
+  facet_wrap(. ~ model, ncol = 1)
 
--   (Figure) Accuracy of all models on $F_{all}$, $F_{min}$, $Few(F_{all})$, and
-    $Few(F_{min})$ on the test set.
+```
 
-Improvements:
-
--   Change colors of bars to differentiate base fsets from Few fsets from
-    Important fsets.
+x
 
 # Conclusions
 
