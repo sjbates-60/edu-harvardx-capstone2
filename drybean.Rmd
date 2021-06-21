@@ -42,20 +42,13 @@ fig1caption <- "Distributions of the features, grouped by the type of feature."
 
 For this report, I am exploring a few different ways to select a subset of
 features for training a classification model. I chose a dataset of measurements
-performed on seven types of dry beans[@koklu2020].
-
-Applied two techniques to select features.
-
-Trained five models on four sets of features to see which could most accurately
-predict the type of bean from the features.
-
-Created an algorithm for selecting a minimal set of features that maximizes the
-accuracy of a model.
-
-Two of the models report the importance of each feature in their
-classifications. I compare the sets of important features to the sets resulting
-from the minimal set construction. Finally, I calculate the accuracy of the five
-models on the four sets of features using the reserved test set.
+performed on seven types of dry beans[@koklu2020]. I investigate the feature
+distributions in a couple of ways, and create an algorithm for selecting
+features that maximizes accuracy with as few features as possible. I test the
+various sets of features on five different models, indicating the accuracy of
+each model on each feature set. Two of the models report the importance of
+features during training, so I compare them to the feature sets I construct.
+Lastly, I check the accuracy of the trained models on a testing set.
 
 # Data Exploration
 
@@ -96,8 +89,8 @@ features are geometric, four are unknown "shape factors" $SF1 - SF4$, and one
 12. Compactness ($CO$): Defined as $Ed / X$.
 
 [^1]: The document accompanying the dataset uses $L$ and $l$ for the major and
-    minor aix lengths. I changed it to X's since a lower-case L is not always
-    distinguishable from an upper-case I.
+    minor axis lengths. I changed them to $X$ and $x$, respectively, for greater
+    readability.
 
 There are seven types of bean represented: Barbunya, Bombay, Cali, Dermason,
 Horoz, Seker, and Sira. Figure \@ref(fig:feature-ridgeplots) shows the
@@ -163,7 +156,7 @@ grid.arrange(areas, distances, others, nrow = 3, heights = c(7, 5, 8)/20)
 
 ## Feature selection
 
-### Mathematically
+### Using the definitions
 
 The first step in feature selection relies on the feature definitions
 themselves: Five of the geometric features are defined in terms of other
@@ -247,7 +240,7 @@ showed $F_{min}$ producing as high an accuracy or higher than that produced by
 $F_{all}$. This demonstrates that the goal of feature selection is not a vain
 one.
 
-```{r setcaption_base}
+```{r setcaption-base}
 fig_caption_base <- 
   "Accuracy of each model and feature set on the training set."
 ```
@@ -449,9 +442,37 @@ accuracy_colplot(bar_data, curr_colors) +
 
 # Results
 
-x
+```{r improvements}
+train_all <- training_accuracies %>% filter(name == "whole")
+train_min <- training_accuracies %>% filter(name == "min")
+loss_max <- min(train_min$accuracy/train_all$accuracy)
+gain_max <- max(train_min$accuracy/train_all$accuracy)
+percent_change <- function(x) round(1 - x, 3) * 100
 
-```{r setcaption_test}
+
+```
+
+The initial feature selection, using the definitions and correlation, reduced
+accuracy only slightly (a maximum loss of `r percent_change(loss_max)`%)
+compared to using the full feature set. It even improved accuracy by
+`r -percent_change(gain_max)`% in the `knn` model. The feature sets found by the
+algorithm improved accuracy in every case compared to the full feature set.
+Furthermore, the largest feature set found by the algorithm had only 7 features
+and all other discovered feature sets had either 4 or 5 features. This appears
+to corroborate the dimensionality suggested by the principal component analysis.
+
+On the other hand, the features reported as important by the `rpart2` and
+`treebag` models did not improve accuracy. The features found by the algorithm
+showed no particular relation to the important features. In fact, two of the
+features found by the algorithm for `rpart2` have an importance of zero (Table
+\@ref(tab:alg-vs-imp-1)).
+
+With the exception of the `treebag` model, the accuracy results on the testing
+set are very similar to the accuracy results on the training set. The accuracy
+results for the `treebag` model were very high on the training set, suggesting
+that it may have been overtrained.
+
+```{r setcaption-test}
 fig_caption_test <- sprintf(
   "%s",
   "Accuracy of each model and feature set on the testing set."
@@ -473,10 +494,12 @@ accuracy_colplot(test_accuracies, c(rep(bar_colors[2], 2),
 
 ```
 
-x
-
 # Conclusions
 
-x
+Judicious feature selection can clearly improve the accuracy of some models. My
+algoriththm is an attempt to identify the most important features for a model.
+It has one major disadvantage: it may increase the training time significantly.
+In the worst case, where every feature is significant, the training time is
+multiplied by $N^2/2$, where $N$ is the number of features.
 
 # Bibliography
