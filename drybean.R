@@ -17,10 +17,12 @@
 # Main program:
 #   1. Loads the data.
 #   2. Verifies mathematical relationships among the features.
-#   3. Compares the accuracy of four models on three sets of features.
+#   3. Compares the accuracy of five models on two sets of features.
 #   4. Discovers a minimal set of features that maximizes accuracy
 #      for each model.
-#   5. Finds the most important features as reported by the treebag model,
+#   5. Finds the most important features as reported by the rpart2 and
+#      treebag models, and calculates the accuracy of each model on
+#      the sets of important features.
 #   6. Calculates the accuracy of each model and set of features on the
 #      test set.
 #
