@@ -40,15 +40,15 @@ fig1caption <- "Distributions of the features, grouped by the type of feature."
 
 # Introduction
 
-For this report, I am exploring a few different ways to select a subset of
-features for training a classification model. I chose a dataset of measurements
-performed on seven types of dry beans[@koklu2020]. I investigate the feature
-distributions in a couple of ways, and create an algorithm for selecting
-features that maximizes accuracy with as few features as possible. I test the
-various sets of features on five different models, indicating the accuracy of
-each model on each feature set. Two of the models report the importance of
-features during training, so I compare them to the feature sets I construct.
-Lastly, I check the accuracy of the trained models on a testing set.
+For this report, I explore a few different ways to select a subset of features
+for training a classification model. Using a dataset of measurements performed
+on seven types of dry beans[@koklu2020], I investigate the feature distributions
+in a couple of ways, and create an algorithm for selecting features that
+maximizes accuracy with as few features as possible. I test the various sets of
+features on five different models, indicating the accuracy of each model on each
+feature set. Two of the models report the importance of features during
+training, so I compare them to the feature sets I construct. Lastly, I check the
+accuracy of the trained models on a testing set.
 
 # Data Exploration
 
@@ -108,39 +108,40 @@ x_text <- theme(axis.text.x = element_text(size = 8),
                 axis.title.x = element_text(family = "Times", size = 9))
 
 p01 <- beans %>% ggplot(aes(A, y = fct_rev(Class), fill = Class)) +
-  theme_minimal() + ridges + xlab("Area (A)") + 
+  theme_minimal() + ridges + xlab(expression(Area~(italic(A)))) + 
   labs(fill = "Type of bean") + no_y + x_text + colrs +
   theme(legend.text = element_text(family = "Times"),
         legend.title = element_text(family = "Times")) +
   scale_x_continuous(labels = comma)
 
 p07 <- beans %>% ggplot(aes(C, y = fct_rev(Class), fill = Class)) +
-  theme_minimal() + ridges + xlab("Convex area (C)") + 
+  theme_minimal() + ridges + xlab(expression(Convex~area~(italic(C)))) + 
   no_y + no_legend + x_text + colrs +
   scale_x_continuous(labels = comma)
 
 feature_ridgeplot <- function(featname, featdesc) {
   featsym <- sym(featname)
+  label_exp <- parse(text = sprintf("%s~(italic(%s))", featdesc, featname))
   beans %>% ggplot(aes(!!featsym, y = fct_rev(Class), fill = Class)) +
-    theme_minimal() + no_y + xlab(sprintf("%s (%s)", featdesc, featname)) +
+    theme_minimal() + no_y + xlab(label_exp) +
     ridges + no_legend + x_text + colrs
 }
 
 p02 <- feature_ridgeplot("P", "Perimeter")
-p03 <- feature_ridgeplot("X", "Major axis length")
-p04 <- feature_ridgeplot("x", "Minor axis length")
-p05 <- feature_ridgeplot("K", "Aspect Ratio")
+p03 <- feature_ridgeplot("X", "Major~axis~length")
+p04 <- feature_ridgeplot("x", "Minor~axis~length")
+p05 <- feature_ridgeplot("K", "Aspect~Ratio")
 p06 <- feature_ridgeplot("Ec", "Eccentricity")
-p08 <- feature_ridgeplot("Ed", "Equiv. diameter")
+p08 <- feature_ridgeplot("Ed", "Equiv.~diameter")
 p09 <- feature_ridgeplot("Ex", "Extent")
 p10 <- feature_ridgeplot("S", "Solidity")
 p11 <- feature_ridgeplot("R", "Roundness")
 p12 <- feature_ridgeplot("CO", "Compactness")
-p13 <- feature_ridgeplot("SF1", "Shape factor 1") +
+p13 <- feature_ridgeplot("SF1", "Shape~factor~1") +
   theme(axis.text.x = element_text(size = 6))
-p14 <- feature_ridgeplot("SF2", "Shape factor 2")
-p15 <- feature_ridgeplot("SF3", "Shape factor 3")
-p16 <- feature_ridgeplot("SF4", "Shape factor 4")
+p14 <- feature_ridgeplot("SF2", "Shape~factor~2")
+p15 <- feature_ridgeplot("SF3", "Shape~factor~3")
+p16 <- feature_ridgeplot("SF4", "Shape~factor~4")
 
 areas <- arrangeGrob(p01, p07, 
                      top = "Features measuring an area",
@@ -499,7 +500,7 @@ accuracy_colplot(test_accuracies, c(rep(bar_colors[2], 2),
 Judicious feature selection can clearly improve the accuracy of some models. My
 algoriththm is an attempt to identify the most important features for a model.
 It has one major disadvantage: it may increase the training time significantly.
-In the worst case, where every feature is significant, the training time is
-multiplied by $N^2/2$, where $N$ is the number of features.
+In the worst case, where every additional feature increases accuracy, the
+training time is multiplied by $N^2/2$, where $N$ is the number of features.
 
 # Bibliography
