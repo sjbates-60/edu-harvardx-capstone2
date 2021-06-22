@@ -40,15 +40,15 @@ fig1caption <- "Distributions of the features, grouped by the type of feature."
 
 # Introduction
 
-For this report, I explore a few different ways to select a subset of features
+In this report, I explore a few different ways to select a subset of features
 for training a classification model. Using a dataset of measurements performed
 on seven types of dry beans[@koklu2020], I investigate the feature distributions
 in a couple of ways, and create an algorithm for selecting features that
-maximizes accuracy with as few features as possible. I test the various sets of
-features on five different models, indicating the accuracy of each model on each
-feature set. Two of the models report the importance of features during
-training, so I compare them to the feature sets I construct. Lastly, I check the
-accuracy of the trained models on a testing set.
+maximizes accuracy with as few features as possible. I train five models on the
+various sets of features, indicating the accuracy of each model on each feature
+set. Two of the models report the importance of features during training, so I
+compare them to the feature sets I construct. Lastly, I check the accuracy of
+the trained models on a reserved testing set.
 
 # Data Exploration
 
@@ -182,14 +182,14 @@ remaining geometric features plus the 4 shape factors.
 
 ### Using correlation
 
-Correlation allows me to eliminate another feature. Figure
-\@ref(fig:feature-ridgeplots) shows that the area $A$ and convex area $C$
+Correlation allows me to eliminate another geometric feature. Figure
+\@ref(fig:feature-ridgeplots) shows that the area ($A$) and convex area ($C$)
 distributions for each type of bean are very similar. Table
-\@ref(tab:correlations) shows that they are highly correlated, so $C$ can be
-safely removed from the list of features. The table provides additional evidence
-that I may safely remove $CO$ and $Ed$, as $SF3$ and $P$, respectively, are
-highly correlated with them. I will use $F_{min}$ to denote the resulting set of
-10 features $\{ A, P, X, x, Ec, Ex, SF1, SF2, SF3, SF4 \}$.
+\@ref(tab:correlations) shows that they are very highly correlated, so $C$ can
+be safely removed from the list of features. The table provides additional
+evidence that I may safely remove $CO$ and $Ed$, as $SF3$ and $P$, respectively,
+are highly correlated with them. I will use $F_{min}$ to denote the resulting
+set of 10 features $\{ A, P, X, x, Ec, Ex, SF1, SF2, SF3, SF4 \}$.
 
 ```{r correlations}
 corr_table <- map_dfr(1:(length(features) - 1), function(i) {
@@ -449,24 +449,22 @@ train_min <- training_accuracies %>% filter(name == "min")
 loss_max <- min(train_min$accuracy/train_all$accuracy)
 gain_max <- max(train_min$accuracy/train_all$accuracy)
 percent_change <- function(x) round(1 - x, 3) * 100
-
-
 ```
 
-The initial feature selection, using the definitions and correlation, reduced
-accuracy only slightly (a maximum loss of `r percent_change(loss_max)`%)
-compared to using the full feature set. It even improved accuracy by
-`r -percent_change(gain_max)`% in the `knn` model. The feature sets found by the
-algorithm improved accuracy in every case compared to the full feature set.
-Furthermore, the largest feature set found by the algorithm had only 7 features
-and all other discovered feature sets had either 4 or 5 features. This appears
-to corroborate the dimensionality suggested by the principal component analysis.
+The minimal feature set $F_{min}$ reduced accuracy only slightly (a maximum loss
+of `r percent_change(loss_max)`%) compared to using the full feature set
+$F_{all}$. It even improved accuracy by `r -percent_change(gain_max)`% in the
+`knn` model. The feature sets found by the algorithm improved accuracy in every
+model compared to $F_{all}$. Furthermore, the largest feature set found by the
+algorithm had only 7 features and all other discovered feature sets had either 4
+or 5 features. This is a significant reduction in size from the 10 features in
+$F_{min}$.
 
 On the other hand, the features reported as important by the `rpart2` and
-`treebag` models did not improve accuracy. The features found by the algorithm
-showed no particular relation to the important features. In fact, two of the
-features found by the algorithm for `rpart2` have an importance of zero (Table
-\@ref(tab:alg-vs-imp-1)).
+`treebag` models did not improve accuracy. Also, the features found by the
+algorithm showed no particular relation to the important features. In fact, two
+of the features found by the algorithm for `rpart2` have an importance of zero
+(Table \@ref(tab:alg-vs-imp-1)).
 
 With the exception of the `treebag` model, the accuracy results on the testing
 set are very similar to the accuracy results on the training set. The accuracy
@@ -497,10 +495,14 @@ accuracy_colplot(test_accuracies, c(rep(bar_colors[2], 2),
 
 # Conclusions
 
-Judicious feature selection can clearly improve the accuracy of some models. My
-algoriththm is an attempt to identify the most important features for a model.
-It has one major disadvantage: it may increase the training time significantly.
-In the worst case, where every additional feature increases accuracy, the
-training time is multiplied by $N^2/2$, where $N$ is the number of features.
+Judicious feature selection can clearly improve the accuracy of some models. The
+algoriththm improved the accuracy of each model and simultaneously reduced the
+required number of features significantly. It has one major disadvantage: it may
+increase the training time significantly. In the worst case, where every
+additional feature increases accuracy, the training time is on the order of
+$N^2/2$, where $N$ is the number of features. For the models chosen, the actual
+training time was between $4N$ and $7N$. This could still be significant if each
+iteration is slow, as it was for some of the other random forest models, such as
+`rf` and `Rborist`.
 
 # Bibliography
