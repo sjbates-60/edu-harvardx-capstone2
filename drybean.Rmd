@@ -238,8 +238,7 @@ The result appears in Figure \@ref(fig:base-accuracies). In three of the models
 (`lda`, `qda`, and `treebag`), the minimal set $F_{min}$ produced a lower
 accuracy than the full set $F_{all}$. The other two models (`knn` and `rpart2`)
 showed $F_{min}$ producing as high an accuracy or higher than that produced by
-$F_{all}$. This demonstrates that the goal of feature selection is not a vain
-one.
+$F_{all}$.
 
 ```{r setcaption-base}
 fig_caption_base <- 
@@ -333,9 +332,9 @@ accuracy_colplot(bar_data, curr_colors) +
 
 One last exploration involves the idea of variable importance. When the caret
 package `train` function is executed on the last two models, `rpart2` and
-`treebag`, the result includes a table showing the importance of each variable
-or feature for predicting. I compared the tables to the feature sets produced by
-my algorithm; the results appear in Tables \@ref(tab:alg-vs-imp-1) -
+`treebag`, the resulting models include a table showing the importance of each
+variable or feature for predicting. I compared the tables to the feature sets
+produced by my algorithm; the results appear in Tables \@ref(tab:alg-vs-imp-1) -
 \@ref(tab:alg-vs-imp-4). Each table shows the importance of each feature as a
 percentage, with importance decreasing from left to right. The highlighted
 columns indicate the features found by the Few algorithm. I also calculated the
@@ -454,11 +453,11 @@ percent_change <- function(x) round(1 - x, 3) * 100
 The minimal feature set $F_{min}$ reduced accuracy only slightly (a maximum loss
 of `r percent_change(loss_max)`%) compared to using the full feature set
 $F_{all}$. It even improved accuracy by `r -percent_change(gain_max)`% in the
-`knn` model. The feature sets found by the algorithm improved accuracy in every
-model compared to $F_{all}$. Furthermore, the largest feature set found by the
-algorithm had only 7 features and all other discovered feature sets had either 4
-or 5 features. This is a significant reduction in size from the 10 features in
-$F_{min}$.
+`knn` model. The feature sets found by the algorithm improved accuracy on the
+training set in every model compared to $F_{all}$. Furthermore, the largest
+feature set found by the algorithm had only 7 features and all other discovered
+feature sets had either 4 or 5 features. This is a significant reduction in size
+from the 10 features in $F_{min}$.
 
 On the other hand, the features reported as important by the `rpart2` and
 `treebag` models did not improve accuracy. Also, the features found by the
@@ -469,7 +468,9 @@ of the features found by the algorithm for `rpart2` have an importance of zero
 With the exception of the `treebag` model, the accuracy results on the testing
 set are very similar to the accuracy results on the training set. The accuracy
 results for the `treebag` model were very high on the training set, suggesting
-that it may have been overtrained.
+that it may have been overtrained. The accuracies for the feature sets found by
+the algorithm were also lower on the testing set than the accuracies for the
+original feature sets, which may also indicate overtraining.
 
 ```{r setcaption-test}
 fig_caption_test <- sprintf(
@@ -496,13 +497,20 @@ accuracy_colplot(test_accuracies, c(rep(bar_colors[2], 2),
 # Conclusions
 
 Judicious feature selection can clearly improve the accuracy of some models. The
-algoriththm improved the accuracy of each model and simultaneously reduced the
+algorithm improved the accuracy of each model and simultaneously reduced the
 required number of features significantly. It has one major disadvantage: it may
 increase the training time significantly. In the worst case, where every
-additional feature increases accuracy, the training time is on the order of
-$N^2/2$, where $N$ is the number of features. For the models chosen, the actual
-training time was between $4N$ and $7N$. This could still be significant if each
-iteration is slow, as it was for some of the other random forest models, such as
-`rf` and `Rborist`.
+additional feature increases accuracy, the training time is multiplied by a
+factor of $N^2/2$, where $N$ is the number of features. For the models chosen,
+the actual training time was multiplied by a factor between $4N$ and $7N$,
+compared to the training time on a single feature set. Training for the `lda`
+and `qda` models was very fast, roughly 10 seconds per feature set on the
+training set, so the time taken by the algorithm was not prohibitive. By
+contrast, training for the `treebag` model took 4-5 minutes per feature set, so
+the algorithm took several hours to complete. Some of the other random forest
+models, such as `rf` and `Rborist`, took substantially longer, which is why they
+were not included. The size of the dataset and the speed of training a
+particular model are therefore useful parameters in deciding whether the
+algorithm is worth applying.
 
 # Bibliography
