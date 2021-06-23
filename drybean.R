@@ -77,13 +77,13 @@ log_info <- function(msg) {
 
 ## 1. Load data --------------------------------------------------------------
 log_info("Dry Bean Dataset analysis")
-# log_info("Downloading data files...")
-# beanUrl <- "https://archive.ics.uci.edu/ml/machine-learning-databases/00602/DryBeanDataset.zip"
-# download.file(beanUrl, destfile = "bean.zip")
-# unzip("bean.zip", files = c("DryBeanDataset/Dry_Bean_Dataset.txt",
-#                             "DryBeanDataset/Dry_Bean_Dataset.xlsx"))
-# file.remove("bean.zip")
-# remove(beanUrl)
+log_info("Downloading data files...")
+beanUrl <- "https://archive.ics.uci.edu/ml/machine-learning-databases/00602/DryBeanDataset.zip"
+download.file(beanUrl, destfile = "bean.zip")
+unzip("bean.zip", files = c("DryBeanDataset/Dry_Bean_Dataset.txt",
+                            "DryBeanDataset/Dry_Bean_Dataset.xlsx"))
+file.remove("bean.zip")
+remove(beanUrl)
 
 log_info("Loading data...")
 beans <- read_excel("DryBeanDataset/Dry_Bean_Dataset.xlsx")
