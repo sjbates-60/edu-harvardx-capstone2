@@ -72,7 +72,7 @@ features are geometric, four are unknown "shape factors" $SF1 - SF4$, and one
 6.  Eccentricity ($Ec$): The eccentricity of an ellipse that has the same
     moments of inertia as the bean image.
 
-7.  Convex area ($C$): The number of pixels within the smallest convext polygon
+7.  Convex area ($C$): The number of pixels within the smallest convex polygon
     that contains the bean image.
 
 8.  Equivalent diameter ($Ed$): The diameter of a circle having the same area as
