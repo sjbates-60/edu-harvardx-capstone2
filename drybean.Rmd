@@ -360,13 +360,14 @@ imp_table <- function(mod, which, table_caption) {
   knitr::kable(display_table, booktabs = T,
                caption = table_caption) %>%
     column_spec(match_fewest, bold = TRUE, background = "yellow",
-                include_thead = TRUE)
+                include_thead = TRUE) %>%
+      kable_styling(latex_options = "hold_position")
   } else {
   knitr::kable(display_table, booktabs = T,
                caption = table_caption) %>%
     column_spec(match_fewest, bold = TRUE, background = "yellow",
                 include_thead = TRUE) %>%
-      kable_styling(latex_options = "scale_down")
+      kable_styling(latex_options = c("scale_down", "hold_position"))
   }
 }
 rpart2_caption1 <- 
@@ -467,11 +468,12 @@ of the features found by the algorithm for `rpart2` have an importance of zero
 (Table \@ref(tab:alg-vs-imp-1)).
 
 With the exception of the `treebag` model, the accuracy results on the testing
-set are very similar to the accuracy results on the training set. The accuracy
-results for the `treebag` model were very high on the training set, suggesting
-that it may have been overtrained. The accuracies for the feature sets found by
-the algorithm were also lower on the testing set than the accuracies for the
-original feature sets, which may also indicate overtraining.
+set are very similar to the accuracy results on the training set (Figure
+\@ref(fig:fig-test)). The accuracy results for the `treebag` model were very
+high on the training set, suggesting that it may have been overtrained. The
+accuracies for the feature sets found by the algorithm were also lower on the
+testing set than the accuracies for the original feature sets, which may also
+indicate overtraining.
 
 ```{r setcaption-test}
 fig_caption_test <- sprintf(
